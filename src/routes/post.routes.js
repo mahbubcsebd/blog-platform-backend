@@ -9,11 +9,17 @@ const {
 } = require('../controllers/post.controller');
 
 const { uploadPreviewImage } = require('../middlewares/upload.middleware');
+const authMiddleware = require('../middlewares/auth');
 
 const postRouter = express.Router();
 
 // Routes
-postRouter.post('/', uploadPreviewImage.single('previewImage'), createPost);
+postRouter.post(
+  '/',
+  authMiddleware,
+  uploadPreviewImage.single('previewImage'),
+  createPost
+);
 postRouter.get('/', getAllPosts);
 
 // Important: Keep slug route after fixed routes like `/` or `/search`

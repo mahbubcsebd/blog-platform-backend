@@ -5,6 +5,7 @@ const slugify = require('../helpers/slugify');
 const calculateReadTime = require('../helpers/calculateReadTime');
 
 exports.createPost = async (req, res) => {
+  console.log(req.user);
   try {
     const {
       title,
@@ -207,7 +208,6 @@ exports.getAllPosts = async (req, res) => {
       },
     });
 
-    // নতুন মডেল অনুযায়ী ডেটা ফরম্যাট করুন
     const formattedPosts = posts.map((post) => ({
       id: post.id,
       title: post.title,
