@@ -7,13 +7,19 @@ const registerValidation = [
     .notEmpty()
     .withMessage('First name is required')
     .isLength({ min: 3, max: 31 })
-    .withMessage('Name should be at least 3-31 characters long'),
+    .withMessage('Name should be 3-31 characters long'),
   body('lastName')
     .trim()
     .notEmpty()
     .withMessage('Last name is required')
     .isLength({ min: 3, max: 31 })
-    .withMessage('Name should be at least 3-31 characters long'),
+    .withMessage('Name should be 3-31 characters long'),
+  body('username')
+    .trim()
+    .notEmpty()
+    .withMessage('Username is required')
+    .isLength({ min: 3, max: 31 })
+    .withMessage('Username should be 3-31 characters long'),
   body('email')
     .trim()
     .notEmpty()
@@ -32,14 +38,22 @@ const registerValidation = [
     ),
 ];
 
-// Login validation
+// Login validation (username or email)
 const loginValidation = [
-  body('email')
+  body('username')
     .trim()
     .notEmpty()
-    .withMessage('Email is required')
-    .isEmail()
-    .withMessage('Email must be valid'),
+    .withMessage('Email or Username is required')
+    .bail()
+    .custom((value) => {
+      if (value.includes('@')) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          throw new Error('Email must be valid');
+        }
+      }
+      return true;
+    }),
   body('password').trim().notEmpty().withMessage('Password is required'),
 ];
 

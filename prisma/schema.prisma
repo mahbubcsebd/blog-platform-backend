@@ -12,9 +12,10 @@ model User {
   firstName           String
   lastName            String
   email               String    @unique
+  username            String    @unique
   password            String
   posts               Post[]
-  role                String    @default("user")
+  role                UserRole  @default(USER)
   refreshToken        String?
   refreshTokenExpires DateTime?
   loginDevices        Json[]    @default([])
@@ -38,16 +39,15 @@ model Post {
   title String
   slug  String @unique
 
-  // কন্টেন্টের জন্য একক ফিল্ড
   content     String?
   htmlContent String?
   contentType String?
 
-  excerpt         String? // অপশনাল করা হয়েছে
-  coverImageUrl   String? // নাম পরিবর্তন করে coverImageUrl করা হয়েছে
-  previewImageUrl String? // নতুন ফিল্ড
+  excerpt         String?
+  coverImageUrl   String?
+  previewImageUrl String?
   status          PostStatus @default(DRAFT)
-  publishDate     DateTime? // SCHEDULED পোস্টের জন্য নতুন ফিল্ড
+  publishDate     DateTime?
 
   topicId String? @db.ObjectId
   topic   Topic?  @relation(fields: [topicId], references: [id])
@@ -55,11 +55,13 @@ model Post {
   authorId String? @db.ObjectId
   author   User?   @relation(fields: [authorId], references: [id])
 
-  order    Int       @default(0)
-  postTags PostTag[]
+  order     Int       @default(0)
+  postTags  PostTag[]
+  readTime  Int       @default(1)
+  readCount Int       @default(0)
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt // এটি যোগ করা ভালো অভ্যাস
+  updatedAt DateTime @updatedAt
 }
 
 model Tag {
@@ -81,4 +83,10 @@ enum PostStatus {
   PUBLISHED
   SCHEDULED
   ARCHIVED
+}
+
+enum UserRole {
+  ADMIN
+  MODERATOR
+  USER
 }

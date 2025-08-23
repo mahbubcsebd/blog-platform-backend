@@ -21,12 +21,100 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
+// exports.register = async (req, res) => {
+//   try {
+//     const { firstName, lastName, email, password } = req.body;
+
+//     // Validate input data
+//     if (!firstName || !lastName || !email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'All fields are required',
+//         errors: {
+//           firstName: !firstName ? 'First name is required' : undefined,
+//           lastName: !lastName ? 'Last name is required' : undefined,
+//           email: !email ? 'Email is required' : undefined,
+//           password: !password ? 'Password is required' : undefined,
+//         },
+//       });
+//     }
+
+//     // Check if user already exists
+//     const existingUser = await prisma.user.findUnique({
+//       where: { email: email.toLowerCase() },
+//     });
+
+//     if (existingUser) {
+//       return res.status(409).json({
+//         success: false,
+//         message: 'An account with this email already exists',
+//         code: 'USER_EXISTS',
+//       });
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     const userData = {
+//       firstName: firstName.trim(),
+//       lastName: lastName.trim(),
+//       email: email.toLowerCase().trim(),
+//     };
+
+//     const newUser = await prisma.user.create({
+//       data: {
+//         ...userData,
+//         password: hashedPassword,
+//       },
+//     });
+
+//     // Generate tokens
+//     const { accessToken, refreshToken } = generateTokens(newUser.id);
+
+//     // Set only refresh token as HTTP-only cookie
+//     res.cookie('refreshToken', refreshToken, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: 'strict',
+//       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+//       path: '/',
+//     });
+
+//     // Save refresh token with device info
+//     await updateRefreshToken(newUser.id, refreshToken, req);
+
+//     // Success response with access token in body
+//     res.status(201).json({
+//       success: true,
+//       message: 'Account created successfully! Welcome to our platform.',
+//       data: {
+//         user: {
+//           id: newUser.id,
+//           firstName: userData.firstName,
+//           lastName: userData.lastName,
+//           email: userData.email,
+//         },
+//         accessToken, // Frontend will use this as Bearer token
+//         expiresIn: 15 * 60, // 15 minutes in seconds
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Registration error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message:
+//         'Something went wrong while creating your account. Please try again.',
+//       code: 'REGISTRATION_ERROR',
+//     });
+//   }
+// };
+
 exports.register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, username, password } = req.body;
 
     // Validate input data
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !username || !password) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required',
@@ -34,21 +122,33 @@ exports.register = async (req, res) => {
           firstName: !firstName ? 'First name is required' : undefined,
           lastName: !lastName ? 'Last name is required' : undefined,
           email: !email ? 'Email is required' : undefined,
+          username: !username ? 'Username is required' : undefined,
           password: !password ? 'Password is required' : undefined,
         },
       });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    // Check if email already exists
+    const existingEmail = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
-
-    if (existingUser) {
+    if (existingEmail) {
       return res.status(409).json({
         success: false,
         message: 'An account with this email already exists',
         code: 'USER_EXISTS',
+      });
+    }
+
+    // Check if username already exists
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: username.trim() },
+    });
+    if (existingUsername) {
+      return res.status(409).json({
+        success: false,
+        message: 'This username is already taken',
+        code: 'USERNAME_EXISTS',
       });
     }
 
@@ -59,6 +159,7 @@ exports.register = async (req, res) => {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.toLowerCase().trim(),
+      username: username.trim(),
     };
 
     const newUser = await prisma.user.create({
@@ -71,19 +172,17 @@ exports.register = async (req, res) => {
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(newUser.id);
 
-    // Set only refresh token as HTTP-only cookie
+    // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
 
-    // Save refresh token with device info
     await updateRefreshToken(newUser.id, refreshToken, req);
 
-    // Success response with access token in body
     res.status(201).json({
       success: true,
       message: 'Account created successfully! Welcome to our platform.',
@@ -93,9 +192,10 @@ exports.register = async (req, res) => {
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
+          username: userData.username,
         },
-        accessToken, // Frontend will use this as Bearer token
-        expiresIn: 15 * 60, // 15 minutes in seconds
+        accessToken,
+        expiresIn: 15 * 60,
       },
     });
   } catch (error) {
@@ -110,31 +210,132 @@ exports.register = async (req, res) => {
 };
 
 // Login API
+// exports.login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Input validation
+//     if (!email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Email and password are required',
+//         errors: {
+//           email: !email ? 'Email is required' : undefined,
+//           password: !password ? 'Password is required' : undefined,
+//         },
+//       });
+//     }
+
+//     // Find user
+//     const user = await prisma.user.findUnique({
+//       where: { email: email.toLowerCase().trim() },
+//     });
+
+//     if (!user) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Invalid email or password',
+//         code: 'INVALID_CREDENTIALS',
+//       });
+//     }
+
+//     // Check password
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Invalid email or password',
+//         code: 'INVALID_CREDENTIALS',
+//       });
+//     }
+
+//     // Generate tokens
+//     const { accessToken, refreshToken } = generateTokens(user.id);
+
+//     // Debug: Token generation চেক করুন
+//     console.log('Generated tokens:');
+//     console.log('Access Token:', accessToken ? 'Generated' : 'Not generated');
+//     console.log('Refresh Token:', refreshToken ? 'Generated' : 'Not generated');
+//     console.log('Refresh Token length:', refreshToken?.length);
+
+//     // Save refresh token to DB
+//     await prisma.user.update({
+//       where: { id: user.id },
+//       data: {
+//         refreshToken,
+//       },
+//     });
+
+//     // Debug: Cookie setting এর আগে
+//     console.log('About to set cookie with refreshToken:', refreshToken);
+
+//     // Set refresh token as HTTP-only cookie
+//     res.cookie('refreshToken', refreshToken, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+//       maxAge: 24 * 60 * 60 * 1000, // 1 day
+//       path: '/',
+//     });
+
+//     console.log('Cookie set successfully');
+
+//     // Response থেকে refreshToken বাদ দিন (security জন্য)
+//     res.status(200).json({
+//       success: true,
+//       message: `Welcome back, ${user.firstName}! You've successfully logged in.`,
+//       data: {
+//         user: {
+//           id: user.id,
+//           firstName: user.firstName,
+//           lastName: user.lastName,
+//           email: user.email,
+//         },
+//         accessToken,
+//         // refreshToken: refreshToken, // এটা comment করুন বা remove করুন
+//         expiresIn: 15 * 60,
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Login error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Something went wrong during login. Please try again.',
+//       code: 'LOGIN_ERROR',
+//     });
+//   }
+// };
+
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body; // username মানে email বা username হতে পারে
 
     // Input validation
-    if (!email || !password) {
+    if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required',
+        message: 'Email/Username and password are required',
         errors: {
-          email: !email ? 'Email is required' : undefined,
+          username: !username ? 'Email or Username is required' : undefined,
           password: !password ? 'Password is required' : undefined,
         },
       });
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    // Find user by email or username
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: username.toLowerCase().trim() },
+          { username: username.toLowerCase().trim() },
+        ],
+      },
     });
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid credentials',
         code: 'INVALID_CREDENTIALS',
       });
     }
@@ -144,7 +345,7 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid credentials',
         code: 'INVALID_CREDENTIALS',
       });
     }
@@ -152,24 +353,13 @@ exports.login = async (req, res) => {
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Debug: Token generation চেক করুন
-    console.log('Generated tokens:');
-    console.log('Access Token:', accessToken ? 'Generated' : 'Not generated');
-    console.log('Refresh Token:', refreshToken ? 'Generated' : 'Not generated');
-    console.log('Refresh Token length:', refreshToken?.length);
-
-    // Save refresh token to DB
+    // Save refresh token in DB
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        refreshToken,
-      },
+      data: { refreshToken },
     });
 
-    // Debug: Cookie setting এর আগে
-    console.log('About to set cookie with refreshToken:', refreshToken);
-
-    // Set refresh token as HTTP-only cookie
+    // Set refresh token in HTTP-only cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -178,29 +368,27 @@ exports.login = async (req, res) => {
       path: '/',
     });
 
-    console.log('Cookie set successfully');
-
-    // Response থেকে refreshToken বাদ দিন (security জন্য)
+    // Response
     res.status(200).json({
       success: true,
-      message: `Welcome back, ${user.firstName}! You've successfully logged in.`,
+      message: `Welcome back, ${user.firstName}!`,
       data: {
         user: {
           id: user.id,
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
+          username: user.username,
         },
         accessToken,
-        // refreshToken: refreshToken, // এটা comment করুন বা remove করুন
-        expiresIn: 15 * 60,
+        expiresIn: 15 * 60, // 15 minutes
       },
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Something went wrong during login. Please try again.',
+      message: 'Something went wrong during login.',
       code: 'LOGIN_ERROR',
     });
   }

@@ -1365,3 +1365,84 @@ SyntaxError: Identifier 'refreshToken' has already been declared
     at Module.require (node:internal/modules/cjs/loader:1491:12)
     at require (node:internal/modules/helpers:135:16)
     at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\auth.routes.js:11:5)
+[2025-08-22 23:21:14] ERROR: Error: Cannot find module '../helpers/slug'
+Require stack:
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\index.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\app.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1405:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
+    at Function._load (node:internal/modules/cjs/loader:1215:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:8:5)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+[2025-08-22 23:25:12] ERROR: Error: Cannot find module '../helpers/slug'
+Require stack:
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\index.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\app.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1405:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
+    at Function._load (node:internal/modules/cjs/loader:1215:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:8:5)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+[2025-08-22 23:25:26] ERROR: Error: Cannot find module '../helpers/slug'
+Require stack:
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\index.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\app.js
+- C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1405:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
+    at Function._load (node:internal/modules/cjs/loader:1215:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:8:5)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+[2025-08-22 23:31:05] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:6
+const { slugify } = require('../utils/slugify');
+        ^
+
+SyntaxError: Identifier 'slugify' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 01:24:36] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:63
+      authorId: req.user?.userId',
+                                ^^
+
+SyntaxError: Invalid or unexpected token
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)

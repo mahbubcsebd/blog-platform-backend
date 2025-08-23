@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 async function cleanDatabase() {
   try {
     // Delete data from all models
-    await prisma.user.deleteMany({});
+    await prisma.postTag.deleteMany({});
     await prisma.post.deleteMany({});
-    await prisma.comment.deleteMany({});
+    await prisma.user.deleteMany({});
     // Add other models here
     console.log('✅ All data deleted successfully using Prisma Client.');
   } catch (error) {
