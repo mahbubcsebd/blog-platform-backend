@@ -723,3 +723,9 @@
 {"level":"info","message":"GET /api/posts?sort=latest&limit=12&page=1&status=PUBLISHED 200 669.904 ms - -","timestamp":"2025-08-23 09:20:44"}
 {"level":"info","message":"OPTIONS /api/auth/refresh 200 1.307 ms - 0","timestamp":"2025-08-23 09:20:47"}
 {"level":"info","message":"POST /api/auth/refresh 200 1800.946 ms - 395","timestamp":"2025-08-23 09:20:49"}
+{"level":"info","message":"GET /api/posts?sort=latest&limit=12&page=1&status=PUBLISHED 200 4516.212 ms - -","timestamp":"2025-08-23 09:45:40"}
+{"level":"info","message":"OPTIONS /api/auth/refresh 200 3.459 ms - 0","timestamp":"2025-08-23 09:45:48"}
+{"level":"info","message":"POST /api/auth/refresh 200 2005.742 ms - 395","timestamp":"2025-08-23 09:45:50"}
+{"level":"info","message":"GET /api/posts?sort=latest&limit=12&page=1&status=PUBLISHED 200 663.287 ms - -","timestamp":"2025-08-23 09:46:41"}
+{"level":"info","message":"OPTIONS /api/auth/refresh 200 1.422 ms - 0","timestamp":"2025-08-23 09:46:45"}
+{"level":"info","message":"POST /api/auth/refresh 200 1745.944 ms - 395","timestamp":"2025-08-23 09:46:47"}
