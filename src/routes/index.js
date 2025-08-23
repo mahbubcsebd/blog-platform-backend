@@ -11,7 +11,7 @@ const topicRouter = require('./topic.routes');
 
 // Use routes
 routes.use('/auth', authRouter);
-routes.use('/users', userRouter);
+routes.use('/user', userRouter);
 routes.use('/posts', postRouter);
 routes.use('/categories', categoryRouter);
 routes.use('/topics', topicRouter);

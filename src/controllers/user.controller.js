@@ -28,7 +28,9 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.getUserById = async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.user;
+
+  console.log(userId);
 
   if (!userId) {
     throw new Error('User ID is required');
@@ -65,14 +67,21 @@ exports.getUserById = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.user;
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
     // Pick only fields that exist in req.body
-    const allowedFields = ['firstName', 'lastName', 'email'];
+    const allowedFields = [
+      'firstName',
+      'lastName',
+      'addess',
+      'phone',
+      'website',
+      'bio',
+    ];
     const updateData = {};
 
     allowedFields.forEach((field) => {
@@ -92,9 +101,11 @@ exports.updateUser = async (req, res) => {
       data: updateData,
     });
 
-    res
-      .status(200)
-      .json({ message: 'User updated successfully', user: updatedUser });
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: updatedUser,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Something went wrong' });

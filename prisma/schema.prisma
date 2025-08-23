@@ -8,14 +8,20 @@ datasource db {
 }
 
 model User {
-  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
-  firstName           String
-  lastName            String
-  email               String    @unique
-  username            String    @unique
-  password            String
-  posts               Post[]
-  role                UserRole  @default(USER)
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName String
+  lastName  String
+  email     String   @unique
+  username  String   @unique
+  password  String
+  posts     Post[]
+  role      UserRole @default(USER)
+
+  phone   String?
+  address String?
+  website String?
+  bio     String?
+
   refreshToken        String?
   refreshTokenExpires DateTime?
   loginDevices        Json[]    @default([])
