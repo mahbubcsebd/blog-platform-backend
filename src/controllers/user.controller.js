@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const excludeFields = require('../utils/exclude');
 
 exports.getAllUsers = async (req, res) => {
   try {
@@ -37,24 +38,14 @@ exports.getUserById = async (req, res) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    const safeUser = excludeFields(user, ['password']);
 
     res.status(200).json({
       success: true,
       message: 'User retrieved successfully',
-      data: user,
+      data: safeUser,
     });
   } catch (error) {
     res.status(500).json({
@@ -77,7 +68,7 @@ exports.updateUser = async (req, res) => {
     const allowedFields = [
       'firstName',
       'lastName',
-      'addess',
+      'address',
       'phone',
       'website',
       'bio',

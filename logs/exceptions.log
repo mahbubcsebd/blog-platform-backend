@@ -1446,3 +1446,175 @@ SyntaxError: Invalid or unexpected token
     at Module.require (node:internal/modules/cjs/loader:1491:12)
     at require (node:internal/modules/helpers:135:16)
     at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:17:35] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:17:53] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:18:02] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:18:50] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:18:56] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:28:39] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:32:10] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:33:07] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\post.controller.js:153
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:9:5)
+[2025-08-23 23:33:16] ERROR: ReferenceError: getPostByUserId is not defined
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:36:47)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\index.js:8:20)
+[2025-08-23 23:33:31] ERROR: ReferenceError: getPostByUserId is not defined
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\post.routes.js:36:47)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\index.js:8:20)
+[2025-08-24 01:41:04] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\me.controller.js:4
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\me.routes.js:3:29)
+[2025-08-24 01:43:14] ERROR: C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\controllers\me.controller.js:4
+exports.getPostByUserId = async (req, res) {
+                                           ^
+
+SyntaxError: Unexpected token '{'
+    at wrapSafe (node:internal/modules/cjs/loader:1666:18)
+    at Module._compile (node:internal/modules/cjs/loader:1708:20)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1491:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\Users\Mahbubur Rahman\Desktop\preparation\blog-platform\backend\src\routes\me.routes.js:3:29)
