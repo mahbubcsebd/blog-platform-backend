@@ -13,7 +13,7 @@ const {
 } = require('../controllers/post.controller');
 
 const { uploadPreviewImage } = require('../middlewares/upload.middleware');
-const authMiddleware = require('../middlewares/auth');
+const { authMiddleware } = require('../middlewares/auth.middleware');
 
 const postRouter = express.Router();
 

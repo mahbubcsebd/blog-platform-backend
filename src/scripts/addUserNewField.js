@@ -4,13 +4,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    // সব user update করে default fields বসানো
     const result = await prisma.user.updateMany({
       data: {
-        phone: null,
-        address: null,
-        website: null,
-        bio: '',
+        isActive: true,
       },
     });
 
@@ -18,7 +14,6 @@ async function main() {
   } catch (err) {
     console.error('❌ Error updating users:', err);
   } finally {
-    // disconnect সব সময় finally এর ভেতরে রাখো
     await prisma.$disconnect();
   }
 }

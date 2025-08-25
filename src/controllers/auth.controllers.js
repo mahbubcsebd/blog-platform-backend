@@ -3,6 +3,7 @@ const prisma = require('../config/prisma');
 const jwt = require('jsonwebtoken');
 const { updateRefreshToken, loginUser } = require('../services/auth.services');
 require('dotenv').config();
+const excludeFields = require('../utils/exclude');
 
 // Helper function to generate tokens
 const generateTokens = (userId) => {
@@ -368,18 +369,16 @@ exports.login = async (req, res) => {
       path: '/',
     });
 
+    const safeUser = excludeFields(user, ['password']);
+
+    console.log(safeUser);
+
     // Response
     res.status(200).json({
       success: true,
       message: `Welcome back, ${user.firstName}!`,
       data: {
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          username: user.username,
-        },
+        user: safeUser,
         accessToken,
         expiresIn: 15 * 60, // 15 minutes
       },
@@ -482,14 +481,9 @@ exports.refreshToken = async (req, res) => {
     // Find user and validate refresh token
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        refreshToken: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-      },
     });
+
+    const safeUser = excludeFields(user, ['password']);
 
     if (!user) {
       res.clearCookie('refreshToken', {
@@ -550,12 +544,7 @@ exports.refreshToken = async (req, res) => {
       success: true,
       message: 'Session refreshed successfully',
       data: {
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-        },
+        user: safeUser,
         accessToken, // Frontend will use this as Bearer token
         expiresIn: 15 * 60, // 15 minutes in seconds
       },

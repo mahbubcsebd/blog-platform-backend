@@ -55,7 +55,8 @@ const authMiddleware = async (req, res, next) => {
         firstName: true,
         lastName: true,
         email: true,
-        // isActive: true, // Add this field if you have user status
+        isActive: true,
+        role: true,
       },
     });
 
@@ -82,6 +83,7 @@ const authMiddleware = async (req, res, next) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      role: user.role,
     };
 
     next();
@@ -94,4 +96,50 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+const isLoggedIn = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'You must be logged in',
+      code: 'NOT_LOGGED_IN',
+    });
+  }
+  next();
+};
+
+const isLoggedOut = (req, res, next) => {
+  if (req.user) {
+    return res.status(400).json({
+      success: false,
+      message: 'Already logged in',
+      code: 'ALREADY_LOGGED_IN',
+    });
+  }
+  next();
+};
+
+const isAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin access required',
+      code: 'FORBIDDEN',
+    });
+  }
+  next();
+};
+
+const hasRole = (roles = []) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied',
+        code: 'FORBIDDEN',
+      });
+    }
+    next();
+  };
+};
+
+module.exports = { authMiddleware, isLoggedIn, isLoggedOut, isAdmin, hasRole };

@@ -16,6 +16,7 @@ model User {
   password  String
   posts     Post[]
   role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
 
   phone   String?
   address String?
