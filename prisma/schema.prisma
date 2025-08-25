@@ -31,14 +31,23 @@ model User {
 }
 
 model Topic {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
-  slug     String  @unique
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String  @unique
+  description String?
+  icon        String?
+  color       String?
+  coverImage  String?
+
   parentId String? @db.ObjectId
   parent   Topic?  @relation("TopicHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children Topic[] @relation("TopicHierarchy")
-  posts    Post[]
-  rder     Int     @default(0)
+
+  posts Post[]
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Post {

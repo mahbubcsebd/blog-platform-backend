@@ -16,6 +16,6 @@ routes.use('/user', userRouter);
 routes.use('/me', meRouter);
 routes.use('/posts', postRouter);
 routes.use('/categories', categoryRouter);
-routes.use('/topics', topicRouter);
+routes.use('/topic', topicRouter);
 
 module.exports = routes;

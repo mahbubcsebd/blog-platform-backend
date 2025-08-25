@@ -1,9 +1,5 @@
 const express = require('express');
 const {
-  createCategory,
-  getCategories,
-} = require('../controllers/category.controllers');
-const {
   createTopic,
   getAllTopics,
   getTopicTree,
@@ -11,24 +7,26 @@ const {
   updateTopic,
   deleteTopic,
 } = require('../controllers/topic.controllers');
+const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware');
+
 const topicRouter = express.Router();
 
-// Create Topic
-topicRouter.post('/', createTopic);
+// ✅ Create Topic
+topicRouter.post('/', authMiddleware, isAdmin, createTopic);
 
-// Get All Topics
+// ✅ Get All Topics (Flat + with parent info + post count)
 topicRouter.get('/', getAllTopics);
 
-// Get Topic Tree
+// ✅ Get Topic Tree (Hierarchy)
 topicRouter.get('/tree', getTopicTree);
 
-// Get Topic by Slug
+// ✅ Get Topic by Slug (with parent + children)
 topicRouter.get('/:slug', getTopicBySlug);
 
-// Update Topic
-topicRouter.put('/:id', updateTopic);
+// ✅ Update Topic
+topicRouter.put('/:id', authMiddleware, isAdmin, updateTopic);
 
-// Delete Topic
-topicRouter.delete('/:id', deleteTopic);
+// ✅ Delete Topic
+topicRouter.delete('/:id', authMiddleware, isAdmin, deleteTopic);
 
 module.exports = topicRouter;
