@@ -4,9 +4,52 @@ const cloudinary = require('../config/cloudinary');
 const slugify = require('../helpers/slugify');
 const calculateReadTime = require('../helpers/calculateReadTime');
 
+// Helper function to check and auto-publish scheduled posts
+const checkAndAutoPublishPosts = async () => {
+  try {
+    const now = new Date();
+
+    // Find posts that are scheduled and ready to be published
+    const scheduledPosts = await prisma.post.findMany({
+      where: {
+        isScheduled: true,
+        publishDate: null,
+        status: 'SCHEDULED',
+        publishDate: {
+          lte: now,
+        },
+      },
+    });
+
+    // Auto-publish eligible posts
+    if (scheduledPosts.length > 0) {
+      await prisma.post.updateMany({
+        where: {
+          id: {
+            in: scheduledPosts.map((post) => post.id),
+          },
+        },
+        data: {
+          status: 'PUBLISHED',
+          isScheduled: false,
+        },
+      });
+
+      console.log(`Auto-published ${scheduledPosts.length} scheduled posts`);
+    }
+
+    return scheduledPosts;
+  } catch (error) {
+    console.error('Error auto-publishing posts:', error);
+    return [];
+  }
+};
+
 // create post
 exports.createPost = async (req, res) => {
-  console.log(req.user);
+  console.log(req.file);
+  console.log('req user', req.user);
+
   try {
     const {
       title,
@@ -16,86 +59,112 @@ exports.createPost = async (req, res) => {
       excerpt,
       status,
       publishDate,
-      tags,
+      tags, // ["react", "nextjs", "nodejs"]
     } = req.body;
 
     if (!title || !content) {
       throw createHttpError(400, 'Title and content are required');
     }
 
-    const generatedSlug = slugify(title);
+    // Generate slug
+    const generatedSlug = slugify(title, { lower: true, strict: true });
 
+    // Parse tags safely
     let parsedTags = [];
     if (tags) {
-      try {
-        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
-      } catch {
-        parsedTags = [];
+      if (typeof tags === 'string') {
+        parsedTags = JSON.parse(tags);
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
       }
     }
 
-    let finalContent = content;
-    if (contentType === 'EDITOR' && typeof content === 'string') {
-      try {
-        JSON.parse(content);
-      } catch {}
+    // Connect author safely
+    let authorConnect = undefined;
+    if (req.user?.id) {
+      authorConnect = { id: req.user.id };
+    } else if (req.user?.email) {
+      authorConnect = { email: req.user.email };
+    } else if (req.user?.username) {
+      authorConnect = { username: req.user.username };
     }
+
+    // Compute publish date & isScheduled
+    const postDate = publishDate ? new Date(publishDate) : new Date();
+    const isScheduled = postDate > new Date();
 
     let previewImageUrl = null;
+
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'posts',
-      });
-      previewImageUrl = uploadResult.secure_url;
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'posts', // optional folder in Cloudinary
+          resource_type: 'auto', // automatically detect file type
+        });
+        previewImageUrl = uploadResult.secure_url;
+      } catch (err) {
+        console.error('Cloudinary upload error:', err);
+      }
     }
 
-    // Calculate read time
-    const readTime = calculateReadTime(finalContent);
+    // Create post
+    const post = await prisma.post.create({
+      data: {
+        title,
+        content,
+        htmlContent,
+        contentType,
+        excerpt,
+        status,
+        publishDate: postDate,
+        isScheduled,
+        previewImageUrl,
+        slug: generatedSlug,
 
-    // Prisma-compatible postTags
-    const postTagsData =
-      parsedTags.length > 0
-        ? {
-            create: parsedTags.map((tag) => ({ tagId: tag.id })),
-          }
-        : undefined;
+        ...(authorConnect && { author: { connect: authorConnect } }),
 
-    const postData = {
-      title: title.trim(),
-      slug: generatedSlug,
-      content: finalContent,
-      htmlContent: htmlContent || null,
-      contentType: contentType || 'MARKDOWN',
-      excerpt: excerpt || null,
-      status: status || 'DRAFT',
-      publishDate: publishDate ? new Date(publishDate) : null,
-      previewImageUrl,
-      authorId: req.user?.userId,
-      postTags: postTagsData,
-      readTime,
-    };
+        postTags: parsedTags.length
+          ? {
+              create: parsedTags.map((tagName) => ({
+                tag: {
+                  connectOrCreate: {
+                    where: { name: tagName },
+                    create: { name: tagName },
+                  },
+                },
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        author: true,
+        postTags: { include: { tag: true } },
+      },
+    });
 
-    const newPost = await prisma.post.create({ data: postData });
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Post created successfully',
-      data: newPost,
+      post,
     });
   } catch (error) {
     console.error('Error creating post:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: error.message || 'Internal server error',
+      message: error.message || 'Something went wrong',
     });
   }
 };
 
-// get all posts
+// get all posts (with auto-publish check)
 exports.getAllPosts = async (req, res) => {
   try {
+    // Check and auto-publish scheduled posts first
+    await checkAndAutoPublishPosts();
+
     const { status, topic, tag, limit, offset } = req.query;
     const where = {};
+
     if (status) where.status = status;
     if (topic) where.topic = { slug: topic };
     if (tag) {
@@ -127,6 +196,7 @@ exports.getAllPosts = async (req, res) => {
       order: post.order,
       createdAt: post.createdAt,
       publishDate: post.publishDate,
+      isScheduled: post.isScheduled,
       content: post.content,
       contentType: post.contentType,
       htmlContent: post.htmlContent,
@@ -148,9 +218,12 @@ exports.getAllPosts = async (req, res) => {
   }
 };
 
-// post by slug
+// post by slug (with auto-publish check)
 exports.getPostBySlug = async (req, res) => {
   try {
+    // Check and auto-publish scheduled posts first
+    await checkAndAutoPublishPosts();
+
     const { slug } = req.params;
 
     // ✅ Increment readCount while fetching the post
@@ -214,6 +287,7 @@ exports.getPostBySlug = async (req, res) => {
       coverImageUrl: post.coverImageUrl,
       order: post.order,
       publishDate: post.publishDate,
+      isScheduled: post.isScheduled,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       readCount: post.readCount,
@@ -288,6 +362,28 @@ exports.updatePost = async (req, res) => {
 
     const readTime = calculateReadTime(finalContent);
 
+    // Determine post status and scheduling logic
+    let postStatus = status || 'DRAFT';
+    let isScheduled = false;
+    let finalPublishDate = null;
+
+    if (publishDate) {
+      const scheduleDate = new Date(publishDate);
+      const now = new Date();
+
+      if (scheduleDate > now && (status === 'DRAFT' || !status)) {
+        // Future date and draft status - schedule the post
+        postStatus = 'DRAFT';
+        isScheduled = true;
+        finalPublishDate = scheduleDate;
+      } else if (status === 'PUBLISHED' || scheduleDate <= now) {
+        // Published status or past/current date - publish immediately
+        postStatus = 'PUBLISHED';
+        isScheduled = false;
+        finalPublishDate = scheduleDate;
+      }
+    }
+
     // Prisma-compatible postTags
     const postTagsData =
       parsedTags.length > 0
@@ -304,8 +400,9 @@ exports.updatePost = async (req, res) => {
       htmlContent: htmlContent || null,
       contentType: contentType || 'MARKDOWN',
       excerpt: excerpt || null,
-      status: status || 'DRAFT',
-      publishDate: publishDate ? new Date(publishDate) : null,
+      status: postStatus,
+      publishDate: finalPublishDate,
+      isScheduled: isScheduled,
       previewImageUrl,
       readTime,
       postTags: postTagsData,
@@ -319,7 +416,9 @@ exports.updatePost = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Post updated successfully',
+      message: isScheduled
+        ? `Post scheduled for ${finalPublishDate.toLocaleString()}`
+        : 'Post updated successfully',
       data: updatedPost,
     });
   } catch (error) {
@@ -347,7 +446,7 @@ exports.deletePost = async (req, res) => {
   }
 };
 
-// extra
+// publish post immediately
 exports.publishPost = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.userId; // string
@@ -378,9 +477,11 @@ exports.publishPost = async (req, res) => {
       },
     });
 
-    res
-      .status(200)
-      .json({ success: true, data: publishedPost, message: 'Post published.' });
+    res.status(200).json({
+      success: true,
+      data: publishedPost,
+      message: 'Post published immediately.',
+    });
   } catch (error) {
     console.error('Error publishing post:', error);
     res
@@ -389,6 +490,7 @@ exports.publishPost = async (req, res) => {
   }
 };
 
+// unpublish post
 exports.unpublishPost = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.userId;
@@ -407,7 +509,11 @@ exports.unpublishPost = async (req, res) => {
 
     const unpublishedPost = await prisma.post.update({
       where: { id },
-      data: { status: 'DRAFT', publishDate: null, isScheduled: false },
+      data: {
+        status: 'SCHEDULED',
+        publishDate: null,
+        isScheduled: false,
+      },
       include: {
         author: true,
         topic: true,
@@ -415,13 +521,11 @@ exports.unpublishPost = async (req, res) => {
       },
     });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: unpublishedPost,
-        message: 'Moved to drafts.',
-      });
+    res.status(200).json({
+      success: true,
+      data: unpublishedPost,
+      message: 'Moved to drafts.',
+    });
   } catch (error) {
     console.error('Error unpublishing post:', error);
     res
@@ -430,6 +534,7 @@ exports.unpublishPost = async (req, res) => {
   }
 };
 
+// duplicate post
 exports.duplicatePost = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.userId;
@@ -441,12 +546,10 @@ exports.duplicatePost = async (req, res) => {
     });
 
     if (!originalPost) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: 'Post not found or no permission to duplicate.',
-        });
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found or no permission to duplicate.',
+      });
     }
 
     const duplicatedPost = await prisma.post.create({
@@ -473,13 +576,11 @@ exports.duplicatePost = async (req, res) => {
       },
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: duplicatedPost,
-        message: 'Post duplicated.',
-      });
+    res.status(201).json({
+      success: true,
+      data: duplicatedPost,
+      message: 'Post duplicated.',
+    });
   } catch (error) {
     console.error('Error duplicating post:', error);
     res
@@ -488,6 +589,7 @@ exports.duplicatePost = async (req, res) => {
   }
 };
 
+// schedule post for future publishing
 exports.schedulePost = async (req, res) => {
   const { id } = req.params;
   const { scheduledDate } = req.body;
@@ -501,9 +603,10 @@ exports.schedulePost = async (req, res) => {
 
     const scheduleDateTime = new Date(scheduledDate);
     if (scheduleDateTime <= new Date())
-      return res
-        .status(400)
-        .json({ success: false, message: 'Date must be future.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Scheduled date must be in the future.',
+      });
 
     const existingPost = await prisma.post.findFirst({
       where: { id, authorId: userId },
@@ -516,7 +619,7 @@ exports.schedulePost = async (req, res) => {
     const scheduledPost = await prisma.post.update({
       where: { id },
       data: {
-        status: 'DRAFT',
+        status: 'SCHEDULED',
         publishDate: scheduleDateTime,
         isScheduled: true,
       },
@@ -527,17 +630,82 @@ exports.schedulePost = async (req, res) => {
       },
     });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: scheduledPost,
-        message: `Scheduled for ${scheduleDateTime.toLocaleString()}`,
-      });
+    res.status(200).json({
+      success: true,
+      data: scheduledPost,
+      message: `Post scheduled for ${scheduleDateTime.toLocaleString()}`,
+    });
   } catch (error) {
     console.error('Error scheduling post:', error);
     res
       .status(500)
       .json({ success: false, message: 'Failed to schedule post.' });
+  }
+};
+
+// Get scheduled posts
+exports.getScheduledPosts = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const scheduledPosts = await prisma.post.findMany({
+      where: {
+        authorId: userId,
+        isScheduled: true,
+        status: 'SCHEDULED',
+      },
+      orderBy: { publishDate: 'asc' },
+      include: {
+        author: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        topic: true,
+        postTags: { include: { tag: true } },
+      },
+    });
+
+    const formattedPosts = scheduledPosts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      status: post.status,
+      publishDate: post.publishDate,
+      isScheduled: post.isScheduled,
+      createdAt: post.createdAt,
+      author: post.author,
+      topic: post.topic,
+      tags: post.postTags.map((pt) => pt.tag),
+    }));
+
+    res.json({
+      success: true,
+      count: formattedPosts.length,
+      data: formattedPosts,
+    });
+  } catch (error) {
+    console.error('Error fetching scheduled posts:', error);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to fetch scheduled posts.' });
+  }
+};
+
+// Manual trigger for auto-publishing (for testing or manual execution)
+exports.triggerAutoPublish = async (req, res) => {
+  try {
+    const publishedPosts = await checkAndAutoPublishPosts();
+
+    res.json({
+      success: true,
+      message: `Auto-published ${publishedPosts.length} posts`,
+      data: publishedPosts,
+    });
+  } catch (error) {
+    console.error('Error triggering auto-publish:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to trigger auto-publish.',
+    });
   }
 };

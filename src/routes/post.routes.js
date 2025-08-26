@@ -10,6 +10,8 @@ const {
   unpublishPost,
   duplicatePost,
   schedulePost,
+  getScheduledPosts,
+  triggerAutoPublish,
 } = require('../controllers/post.controller');
 
 const { uploadPreviewImage } = require('../middlewares/upload.middleware');
@@ -40,5 +42,11 @@ postRouter.patch('/:id/publish', authMiddleware, publishPost);
 postRouter.patch('/:id/unpublish', authMiddleware, unpublishPost);
 postRouter.post('/:id/duplicate', authMiddleware, duplicatePost);
 postRouter.patch('/:id/schedule', authMiddleware, schedulePost);
+
+// Get scheduled posts
+postRouter.get('/scheduled', authMiddleware, getScheduledPosts);
+
+// Manual auto-publish trigger (for testing)
+postRouter.post('/auto-publish', authMiddleware, triggerAutoPublish);
 
 module.exports = postRouter;

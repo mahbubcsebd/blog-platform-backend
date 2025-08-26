@@ -71,10 +71,11 @@ model Post {
   authorId String? @db.ObjectId
   author   User?   @relation(fields: [authorId], references: [id])
 
-  order     Int       @default(0)
-  postTags  PostTag[]
-  readTime  Int       @default(1)
-  readCount Int       @default(0)
+  order       Int       @default(0)
+  postTags    PostTag[]
+  readTime    Int       @default(1)
+  readCount   Int       @default(0)
+  isScheduled Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

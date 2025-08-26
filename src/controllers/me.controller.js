@@ -2,9 +2,9 @@ const prisma = require('../config/prisma');
 
 // post by user id
 exports.getPostByUserId = async (req, res) => {
-  const { userId } = req.user;
+  const { id } = req.user;
 
-  if (!userId) {
+  if (!id) {
     res.status(500).json({
       success: false,
       message: 'user id not found',
@@ -14,8 +14,7 @@ exports.getPostByUserId = async (req, res) => {
   try {
     const userAllPost = await prisma.post.findMany({
       where: {
-        authorId: userId,
-        status: 'PUBLISHED',
+        authorId: id,
       },
     });
 
