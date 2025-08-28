@@ -5,6 +5,7 @@ const {
   deleteUser,
   updateUser,
   toggleUserStatus,
+  roleUpdate,
 } = require('../controllers/user.controller');
 const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware');
 const userRouter = express.Router();
@@ -22,6 +23,7 @@ userRouter.put('/profile', authMiddleware, updateUser);
 userRouter.get('/:userId', getUserById);
 userRouter.patch('/:userId', updateUser);
 userRouter.delete('/:userId', deleteUser);
+userRouter.patch('/:userId/role', authMiddleware, isAdmin, roleUpdate);
 
 // admin only
 

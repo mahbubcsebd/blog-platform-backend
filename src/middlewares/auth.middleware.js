@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/prisma');
 require('dotenv').config();
+const excludeFields = require('../utils/exclude');
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -50,15 +51,9 @@ const authMiddleware = async (req, res, next) => {
     // Check if user exists and is active
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        isActive: true,
-        role: true,
-      },
     });
+
+    const safeUser = excludeFields(user, ['password']);
 
     if (!user) {
       return res.status(401).json({
@@ -78,13 +73,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Add user to request object
-    req.user = {
-      userId: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-    };
+    req.user = safeUser;
 
     next();
   } catch (error) {
@@ -119,7 +108,10 @@ const isLoggedOut = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (
+    !req.user ||
+    (req.user.role !== 'ADMIN' && req.user.role !== 'SUPERADMIN')
+  ) {
     return res.status(403).json({
       success: false,
       message: 'Admin access required',

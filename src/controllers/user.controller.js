@@ -1,6 +1,41 @@
 const prisma = require('../config/prisma');
 const excludeFields = require('../utils/exclude');
 
+// Role hierarchy helper function
+const getRoleHierarchy = (role) => {
+  const hierarchy = {
+    SUPERADMIN: 4,
+    ADMIN: 3,
+    MODERATOR: 2,
+    USER: 1,
+  };
+  return hierarchy[role] || 0;
+};
+
+// Check if user can modify target user
+const canModifyUser = (
+  currentUserRole,
+  targetUserRole,
+  currentUserId,
+  targetUserId
+) => {
+  const currentLevel = getRoleHierarchy(currentUserRole);
+  const targetLevel = getRoleHierarchy(targetUserRole);
+
+  // SUPERADMIN can modify anyone except themselves for delete/deactivate
+  if (currentUserRole === 'SUPERADMIN') {
+    return true;
+  }
+
+  // ADMIN can only modify USER and MODERATOR
+  if (currentUserRole === 'ADMIN') {
+    return targetUserRole === 'USER' || targetUserRole === 'MODERATOR';
+  }
+
+  // Other roles cannot modify users
+  return false;
+};
+
 exports.getAllUsers = async (req, res) => {
   const {
     page = 1,
@@ -55,7 +90,10 @@ exports.getAllUsers = async (req, res) => {
     }
 
     // Role filter
-    if (role && ['USER', 'ADMIN'].includes(role.toUpperCase())) {
+    if (
+      role &&
+      ['USER', 'ADMIN', 'SUPERADMIN', 'MODERATOR'].includes(role.toUpperCase())
+    ) {
       whereCondition.role = role.toUpperCase();
     }
 
@@ -111,13 +149,21 @@ exports.getAllUsers = async (req, res) => {
     const hasPrev = pageNum > 1;
 
     // Get stats
-    const [activeCount, inactiveCount, adminCount, userCount] =
-      await Promise.all([
-        prisma.user.count({ where: { isActive: true } }),
-        prisma.user.count({ where: { isActive: false } }),
-        prisma.user.count({ where: { role: 'ADMIN' } }),
-        prisma.user.count({ where: { role: 'USER' } }),
-      ]);
+    const [
+      activeCount,
+      inactiveCount,
+      adminCount,
+      userCount,
+      superAdminCount,
+      moderatorCount,
+    ] = await Promise.all([
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { isActive: false } }),
+      prisma.user.count({ where: { role: 'ADMIN' } }),
+      prisma.user.count({ where: { role: 'USER' } }),
+      prisma.user.count({ where: { role: 'SUPERADMIN' } }),
+      prisma.user.count({ where: { role: 'MODERATOR' } }),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -137,6 +183,8 @@ exports.getAllUsers = async (req, res) => {
         inactive: inactiveCount,
         admins: adminCount,
         users: userCount,
+        superAdmins: superAdminCount,
+        moderators: moderatorCount,
       },
     });
   } catch (error) {
@@ -224,24 +272,124 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-exports.deleteUser = async (req, res) => {
+// Update user role (SUPERADMIN only)
+exports.updateUserRole = async (req, res) => {
   const { userId } = req.params;
-  if (!userId) {
+  const { role } = req.body;
+  const currentUser = req.user;
+
+  if (!userId || !role) {
     return res.status(400).json({
       success: false,
-      message: 'User ID and refresh token are required',
+      message: 'User ID and role are required',
+    });
+  }
+
+  // Only SUPERADMIN can update roles
+  if (currentUser.role !== 'SUPERADMIN') {
+    return res.status(403).json({
+      success: false,
+      message: 'Only SUPERADMIN can update user roles',
+    });
+  }
+
+  // Validate role
+  const validRoles = ['USER', 'MODERATOR', 'ADMIN', 'SUPERADMIN'];
+  if (!validRoles.includes(role.toUpperCase())) {
+    return res.status(400).json({
+      success: false,
+      message:
+        'Invalid role. Valid roles are: USER, MODERATOR, ADMIN, SUPERADMIN',
     });
   }
 
   try {
-    const isExistUser = await prisma.user.findUnique({
+    // Check if target user exists
+    const targetUser = await prisma.user.findUnique({
       where: { id: userId },
+      select: { id: true, role: true, firstName: true, lastName: true },
     });
 
-    if (!isExistUser) {
+    if (!targetUser) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
+      });
+    }
+
+    // Prevent SUPERADMIN from demoting themselves
+    if (currentUser.userId === userId && role.toUpperCase() !== 'SUPERADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'SUPERADMIN cannot demote themselves',
+      });
+    }
+
+    // Update user role
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: role.toUpperCase() },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `User role updated to ${role.toUpperCase()} successfully`,
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user role',
+      error: error.message,
+    });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  const { userId } = req.params;
+  const currentUser = req.user;
+
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: 'User ID is required',
+    });
+  }
+
+  try {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, firstName: true, lastName: true },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check permissions
+    if (
+      !canModifyUser(
+        currentUser.role,
+        targetUser.role,
+        currentUser.userId,
+        userId
+      )
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to delete this user',
+      });
+    }
+
+    // Prevent SUPERADMIN from deleting themselves
+    if (currentUser.role === 'SUPERADMIN' && currentUser.userId === userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'SUPERADMIN cannot delete themselves',
       });
     }
 
@@ -264,9 +412,10 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// toogle user status
+// Toggle user status with role hierarchy
 exports.toggleUserStatus = async (req, res) => {
   const { id } = req.params;
+  const currentUser = req.user;
 
   if (!id) {
     return res.status(400).json({
@@ -276,31 +425,41 @@ exports.toggleUserStatus = async (req, res) => {
   }
 
   try {
-    // Check if user exists
-    const user = await prisma.user.findUnique({
+    // Check if target user exists
+    const targetUser = await prisma.user.findUnique({
       where: { id },
       select: { id: true, isActive: true, role: true },
     });
 
-    if (!user) {
+    if (!targetUser) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Prevent admin status update
-    if (user.role === 'ADMIN') {
+    // Check permissions
+    if (
+      !canModifyUser(currentUser.role, targetUser.role, currentUser.userId, id)
+    ) {
       return res.status(403).json({
         success: false,
-        message: 'Admin user status cannot be changed',
+        message: 'You do not have permission to modify this user',
+      });
+    }
+
+    // Prevent SUPERADMIN from deactivating themselves
+    if (currentUser.role === 'SUPERADMIN' && currentUser.userId === id) {
+      return res.status(403).json({
+        success: false,
+        message: 'SUPERADMIN cannot deactivate themselves',
       });
     }
 
     // Toggle status
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { isActive: !user.isActive },
+      data: { isActive: !targetUser.isActive },
     });
 
     res.status(200).json({
@@ -316,6 +475,203 @@ exports.toggleUserStatus = async (req, res) => {
       success: false,
       message: 'Error toggling user status',
       error: error.message,
+    });
+  }
+};
+
+exports.roleUpdate = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    const currentUser = req.user; // From auth middleware
+
+    // Debug logging
+    console.log('Current User:', currentUser);
+    console.log('Request headers:', req.headers);
+
+    // Check if user is authenticated
+    if (!currentUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required. Please login.',
+      });
+    }
+
+    // Validate required fields
+    if (!userId || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and role are required',
+      });
+    }
+
+    // Validate role values
+    const validRoles = ['USER', 'MODERATOR', 'ADMIN', 'SUPERADMIN'];
+    if (!validRoles.includes(role.toUpperCase())) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Invalid role. Valid roles are: USER, MODERATOR, ADMIN, SUPERADMIN',
+      });
+    }
+
+    const normalizedRole = role.toUpperCase();
+    const currentUserRole = currentUser.role;
+
+    // Additional validation for currentUser properties
+    if (!currentUserRole) {
+      return res.status(403).json({
+        success: false,
+        message: 'User role not found. Invalid authentication.',
+      });
+    }
+
+    // Role hierarchy helper
+    const roleHierarchy = {
+      USER: 1,
+      MODERATOR: 2,
+      ADMIN: 3,
+      SUPERADMIN: 4,
+    };
+
+    // Only SUPERADMIN can assign SUPERADMIN role
+    if (normalizedRole === 'SUPERADMIN' && currentUserRole !== 'SUPERADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Super Administrators can assign Super Admin role',
+      });
+    }
+
+    // Users can only assign roles equal or lower than their own
+    if (roleHierarchy[normalizedRole] > roleHierarchy[currentUserRole]) {
+      return res.status(403).json({
+        success: false,
+        message: `You cannot assign a role higher than your own (${currentUserRole})`,
+      });
+    }
+
+    // Check if target user exists
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Prevent users from updating their own role (except SUPERADMIN)
+    // Handle both currentUser.userId and currentUser.id for compatibility
+    const currentUserId = currentUser.userId || currentUser.id;
+
+    if (userId === currentUserId && currentUserRole !== 'SUPERADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot update your own role',
+      });
+    }
+
+    // Prevent SUPERADMIN from demoting themselves
+    if (
+      userId === currentUserId &&
+      currentUserRole === 'SUPERADMIN' &&
+      normalizedRole !== 'SUPERADMIN'
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'SUPERADMIN cannot demote themselves',
+      });
+    }
+
+    // Prevent non-SUPERADMIN from modifying SUPERADMIN
+    if (targetUser.role === 'SUPERADMIN' && currentUserRole !== 'SUPERADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Super Administrators can modify Super Admin roles',
+      });
+    }
+
+    // Check if role is already the same
+    if (targetUser.role === normalizedRole) {
+      return res.status(400).json({
+        success: false,
+        message: `User already has ${normalizedRole} role`,
+      });
+    }
+
+    // Update the user's role
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: normalizedRole },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        updatedAt: true,
+      },
+    });
+
+    // Log the role change for audit trail
+    console.log(
+      `[ROLE UPDATE] User: ${targetUser.email} | ${
+        targetUser.role
+      } → ${normalizedRole} | By: ${
+        currentUser.email || currentUser.username || currentUserId
+      }`
+    );
+
+    // Return success response
+    return res.status(200).json({
+      success: true,
+      message: `User role successfully updated from ${targetUser.role} to ${normalizedRole}`,
+      data: {
+        user: updatedUser,
+        previousRole: targetUser.role,
+        newRole: normalizedRole,
+        updatedBy: {
+          id: currentUserId,
+          email: currentUser.email || 'N/A',
+          role: currentUser.role,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: 'Database constraint violation',
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Something went wrong',
     });
   }
 };
