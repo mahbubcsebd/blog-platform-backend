@@ -11,10 +11,12 @@ const getCookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => {
 
   return {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax', // Consistent everywhere
+    secure: isProduction, // HTTPS only in production
+    sameSite: isProduction ? 'none' : 'lax', // Important for cross-origin
     maxAge: maxAge,
     path: '/',
+    // Uncomment and set if you have same root domain
+    // domain: isProduction ? '.yourdomain.com' : undefined,
   };
 };
 
@@ -24,8 +26,9 @@ const clearCookieOptions = () => {
   return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax', // Same as set options
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/',
+    // domain: isProduction ? '.yourdomain.com' : undefined,
   };
 };
 
@@ -49,6 +52,8 @@ const generateTokens = (userId) => {
 exports.register = async (req, res) => {
   try {
     const { firstName, lastName, email, username, password } = req.body;
+
+    console.log('Registration attempt:', { username, email });
 
     // Validate input data
     if (!firstName || !lastName || !email || !username || !password) {
@@ -103,32 +108,32 @@ exports.register = async (req, res) => {
       data: {
         ...userData,
         password: hashedPassword,
+        role: 'USER', // Default role
       },
     });
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(newUser.id);
 
-    // Set refresh token cookie with consistent options
+    // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, getCookieOptions());
 
+    // Update refresh token in database
     await updateRefreshToken(newUser.id, refreshToken, req);
+
+    const safeUser = excludeFields(newUser, ['password', 'refreshToken']);
 
     res.status(201).json({
       success: true,
       message: 'Account created successfully! Welcome to our platform.',
       data: {
-        user: {
-          id: newUser.id,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          username: userData.username,
-        },
+        user: safeUser,
         accessToken,
-        expiresIn: 15 * 60,
+        expiresIn: 15 * 60, // 15 minutes in seconds
       },
     });
+
+    console.log('Registration successful for user:', newUser.username);
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
@@ -143,6 +148,11 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    console.log('Login attempt:', {
+      username,
+      timestamp: new Date().toISOString(),
+    });
 
     // Input validation
     if (!username || !password) {
@@ -167,6 +177,7 @@ exports.login = async (req, res) => {
     });
 
     if (!user) {
+      console.log('User not found for:', username);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
@@ -177,6 +188,7 @@ exports.login = async (req, res) => {
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Password mismatch for user:', username);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
@@ -187,16 +199,22 @@ exports.login = async (req, res) => {
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Save refresh token in DB
+    // Update refresh token in database
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken },
     });
 
-    // Set refresh token in HTTP-only cookie with consistent options
+    // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, getCookieOptions());
 
-    const safeUser = excludeFields(user, ['password']);
+    const safeUser = excludeFields(user, ['password', 'refreshToken']);
+
+    console.log('Login successful for user:', {
+      username: user.username,
+      role: user.role,
+      userId: user.id,
+    });
 
     // Response
     res.status(200).json({
@@ -205,7 +223,7 @@ exports.login = async (req, res) => {
       data: {
         user: safeUser,
         accessToken,
-        expiresIn: 15 * 60,
+        expiresIn: 15 * 60, // 15 minutes in seconds
       },
     });
   } catch (error) {
@@ -222,6 +240,8 @@ exports.logout = async (req, res) => {
   try {
     const { userId } = req.user || {};
 
+    console.log('Logout attempt for user:', userId);
+
     if (userId) {
       // Clear refresh token from database
       await prisma.user.update({
@@ -230,8 +250,10 @@ exports.logout = async (req, res) => {
       });
     }
 
-    // Clear refresh token cookie with consistent options
+    // Clear refresh token cookie
     res.clearCookie('refreshToken', clearCookieOptions());
+
+    console.log('Logout successful for user:', userId);
 
     res.status(200).json({
       success: true,
@@ -240,7 +262,7 @@ exports.logout = async (req, res) => {
   } catch (error) {
     console.error('Logout error:', error);
 
-    // Error হলেও cookie clear করুন
+    // Clear cookie even on error
     res.clearCookie('refreshToken', clearCookieOptions());
 
     res.status(200).json({
@@ -250,17 +272,25 @@ exports.logout = async (req, res) => {
   }
 };
 
+// FIXED: Enhanced refresh token with better error handling and logging
 exports.refreshToken = async (req, res) => {
   try {
+    console.log('Refresh token request received');
+    console.log('Cookies:', req.cookies);
+    console.log('Headers:', req.headers);
+
     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!refreshToken) {
+      console.log('No refresh token found in cookies or body');
       return res.status(401).json({
         success: false,
         message: 'Session expired. Please log in again.',
         code: 'REFRESH_TOKEN_MISSING',
       });
     }
+
+    console.log('Refresh token found, verifying...');
 
     // Verify refresh token
     let decoded;
@@ -269,7 +299,10 @@ exports.refreshToken = async (req, res) => {
         refreshToken,
         process.env.JWT_REFRESH_SECRET || 'JGFJKGKJDGSJKFGISDGFGFUIGi'
       );
+      console.log('Token verified, user ID:', decoded.userId);
     } catch (err) {
+      console.log('JWT verification failed:', err.message);
+
       // Clear invalid refresh token cookie
       res.clearCookie('refreshToken', clearCookieOptions());
 
@@ -286,6 +319,7 @@ exports.refreshToken = async (req, res) => {
     });
 
     if (!user) {
+      console.log('User not found for ID:', decoded.userId);
       res.clearCookie('refreshToken', clearCookieOptions());
 
       return res.status(401).json({
@@ -297,6 +331,7 @@ exports.refreshToken = async (req, res) => {
 
     // Validate stored refresh token
     if (user.refreshToken !== refreshToken) {
+      console.log('Refresh token mismatch for user:', user.username);
       res.clearCookie('refreshToken', clearCookieOptions());
 
       return res.status(401).json({
@@ -305,6 +340,11 @@ exports.refreshToken = async (req, res) => {
         code: 'REFRESH_TOKEN_MISMATCH',
       });
     }
+
+    console.log(
+      'Refresh token valid, generating new tokens for user:',
+      user.username
+    );
 
     // Generate new tokens
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(
@@ -317,10 +357,16 @@ exports.refreshToken = async (req, res) => {
       data: { refreshToken: newRefreshToken },
     });
 
-    // Set new refresh token with consistent options
+    // Set new refresh token cookie
     res.cookie('refreshToken', newRefreshToken, getCookieOptions());
 
-    const safeUser = excludeFields(user, ['password']);
+    const safeUser = excludeFields(user, ['password', 'refreshToken']);
+
+    console.log('Token refresh successful for user:', {
+      username: user.username,
+      role: user.role,
+      userId: user.id,
+    });
 
     // Send new access token in response body
     res.status(200).json({
@@ -329,11 +375,15 @@ exports.refreshToken = async (req, res) => {
       data: {
         user: safeUser,
         accessToken,
-        expiresIn: 15 * 60,
+        expiresIn: 15 * 60, // 15 minutes in seconds
       },
     });
   } catch (error) {
     console.error('Refresh token error:', error);
+
+    // Clear cookie on any error
+    res.clearCookie('refreshToken', clearCookieOptions());
+
     res.status(500).json({
       success: false,
       message:
@@ -355,6 +405,7 @@ exports.getProfile = async (req, res) => {
         lastName: true,
         email: true,
         username: true,
+        role: true, // IMPORTANT: Include role for admin guards
         createdAt: true,
         updatedAt: true,
       },
