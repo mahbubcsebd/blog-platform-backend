@@ -5,6 +5,30 @@ const { updateRefreshToken, loginUser } = require('../services/auth.services');
 require('dotenv').config();
 const excludeFields = require('../utils/exclude');
 
+// Helper function for consistent cookie options
+const getCookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax', // Consistent everywhere
+    maxAge: maxAge,
+    path: '/',
+  };
+};
+
+const clearCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax', // Same as set options
+    path: '/',
+  };
+};
+
 // Helper function to generate tokens
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
@@ -21,94 +45,6 @@ const generateTokens = (userId) => {
 
   return { accessToken, refreshToken };
 };
-
-// exports.register = async (req, res) => {
-//   try {
-//     const { firstName, lastName, email, password } = req.body;
-
-//     // Validate input data
-//     if (!firstName || !lastName || !email || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'All fields are required',
-//         errors: {
-//           firstName: !firstName ? 'First name is required' : undefined,
-//           lastName: !lastName ? 'Last name is required' : undefined,
-//           email: !email ? 'Email is required' : undefined,
-//           password: !password ? 'Password is required' : undefined,
-//         },
-//       });
-//     }
-
-//     // Check if user already exists
-//     const existingUser = await prisma.user.findUnique({
-//       where: { email: email.toLowerCase() },
-//     });
-
-//     if (existingUser) {
-//       return res.status(409).json({
-//         success: false,
-//         message: 'An account with this email already exists',
-//         code: 'USER_EXISTS',
-//       });
-//     }
-
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 12);
-
-//     const userData = {
-//       firstName: firstName.trim(),
-//       lastName: lastName.trim(),
-//       email: email.toLowerCase().trim(),
-//     };
-
-//     const newUser = await prisma.user.create({
-//       data: {
-//         ...userData,
-//         password: hashedPassword,
-//       },
-//     });
-
-//     // Generate tokens
-//     const { accessToken, refreshToken } = generateTokens(newUser.id);
-
-//     // Set only refresh token as HTTP-only cookie
-//     res.cookie('refreshToken', refreshToken, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === 'production',
-//       sameSite: 'strict',
-//       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-//       path: '/',
-//     });
-
-//     // Save refresh token with device info
-//     await updateRefreshToken(newUser.id, refreshToken, req);
-
-//     // Success response with access token in body
-//     res.status(201).json({
-//       success: true,
-//       message: 'Account created successfully! Welcome to our platform.',
-//       data: {
-//         user: {
-//           id: newUser.id,
-//           firstName: userData.firstName,
-//           lastName: userData.lastName,
-//           email: userData.email,
-//         },
-//         accessToken, // Frontend will use this as Bearer token
-//         expiresIn: 15 * 60, // 15 minutes in seconds
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Registration error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message:
-//         'Something went wrong while creating your account. Please try again.',
-//       code: 'REGISTRATION_ERROR',
-//     });
-//   }
-// };
 
 exports.register = async (req, res) => {
   try {
@@ -173,14 +109,8 @@ exports.register = async (req, res) => {
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(newUser.id);
 
-    // Set refresh token cookie
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
+    // Set refresh token cookie with consistent options
+    res.cookie('refreshToken', refreshToken, getCookieOptions());
 
     await updateRefreshToken(newUser.id, refreshToken, req);
 
@@ -210,106 +140,9 @@ exports.register = async (req, res) => {
   }
 };
 
-// Login API
-// exports.login = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     // Input validation
-//     if (!email || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Email and password are required',
-//         errors: {
-//           email: !email ? 'Email is required' : undefined,
-//           password: !password ? 'Password is required' : undefined,
-//         },
-//       });
-//     }
-
-//     // Find user
-//     const user = await prisma.user.findUnique({
-//       where: { email: email.toLowerCase().trim() },
-//     });
-
-//     if (!user) {
-//       return res.status(401).json({
-//         success: false,
-//         message: 'Invalid email or password',
-//         code: 'INVALID_CREDENTIALS',
-//       });
-//     }
-
-//     // Check password
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         message: 'Invalid email or password',
-//         code: 'INVALID_CREDENTIALS',
-//       });
-//     }
-
-//     // Generate tokens
-//     const { accessToken, refreshToken } = generateTokens(user.id);
-
-//     // Debug: Token generation চেক করুন
-//     console.log('Generated tokens:');
-//     console.log('Access Token:', accessToken ? 'Generated' : 'Not generated');
-//     console.log('Refresh Token:', refreshToken ? 'Generated' : 'Not generated');
-//     console.log('Refresh Token length:', refreshToken?.length);
-
-//     // Save refresh token to DB
-//     await prisma.user.update({
-//       where: { id: user.id },
-//       data: {
-//         refreshToken,
-//       },
-//     });
-
-//     // Debug: Cookie setting এর আগে
-//     console.log('About to set cookie with refreshToken:', refreshToken);
-
-//     // Set refresh token as HTTP-only cookie
-//     res.cookie('refreshToken', refreshToken, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === 'production',
-//       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-//       maxAge: 24 * 60 * 60 * 1000, // 1 day
-//       path: '/',
-//     });
-
-//     console.log('Cookie set successfully');
-
-//     // Response থেকে refreshToken বাদ দিন (security জন্য)
-//     res.status(200).json({
-//       success: true,
-//       message: `Welcome back, ${user.firstName}! You've successfully logged in.`,
-//       data: {
-//         user: {
-//           id: user.id,
-//           firstName: user.firstName,
-//           lastName: user.lastName,
-//           email: user.email,
-//         },
-//         accessToken,
-//         // refreshToken: refreshToken, // এটা comment করুন বা remove করুন
-//         expiresIn: 15 * 60,
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Login error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Something went wrong during login. Please try again.',
-//       code: 'LOGIN_ERROR',
-//     });
-//   }
-// };
-
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body; // username মানে email বা username হতে পারে
+    const { username, password } = req.body;
 
     // Input validation
     if (!username || !password) {
@@ -360,18 +193,10 @@ exports.login = async (req, res) => {
       data: { refreshToken },
     });
 
-    // Set refresh token in HTTP-only cookie
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      path: '/',
-    });
+    // Set refresh token in HTTP-only cookie with consistent options
+    res.cookie('refreshToken', refreshToken, getCookieOptions());
 
     const safeUser = excludeFields(user, ['password']);
-
-    console.log(safeUser);
 
     // Response
     res.status(200).json({
@@ -380,7 +205,7 @@ exports.login = async (req, res) => {
       data: {
         user: safeUser,
         accessToken,
-        expiresIn: 15 * 60, // 15 minutes
+        expiresIn: 15 * 60,
       },
     });
   } catch (error) {
@@ -393,30 +218,20 @@ exports.login = async (req, res) => {
   }
 };
 
-// Logout API
 exports.logout = async (req, res) => {
   try {
-    // Auth middleware থাকলে userId পাবেন, না থাকলেও logout করতে পারবেন
     const { userId } = req.user || {};
 
     if (userId) {
       // Clear refresh token from database
       await prisma.user.update({
         where: { id: userId },
-        data: {
-          refreshToken: null,
-          // lastLogoutAt: new Date(),
-        },
+        data: { refreshToken: null },
       });
     }
 
-    // Clear refresh token cookie (এটা সর্বদা করুন)
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Development এর জন্য
-      path: '/',
-    });
+    // Clear refresh token cookie with consistent options
+    res.clearCookie('refreshToken', clearCookieOptions());
 
     res.status(200).json({
       success: true,
@@ -426,25 +241,17 @@ exports.logout = async (req, res) => {
     console.error('Logout error:', error);
 
     // Error হলেও cookie clear করুন
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      path: '/',
-    });
+    res.clearCookie('refreshToken', clearCookieOptions());
 
     res.status(200).json({
-      // 500 এর পরিবর্তে 200 (logout সফল হিসেবে ধরুন)
       success: true,
       message: 'Logged out successfully',
     });
   }
 };
 
-// Refresh Token API
 exports.refreshToken = async (req, res) => {
   try {
-    // Priority: HTTP-only cookie > Request body
     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!refreshToken) {
@@ -464,12 +271,7 @@ exports.refreshToken = async (req, res) => {
       );
     } catch (err) {
       // Clear invalid refresh token cookie
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/',
-      });
+      res.clearCookie('refreshToken', clearCookieOptions());
 
       return res.status(401).json({
         success: false,
@@ -483,15 +285,8 @@ exports.refreshToken = async (req, res) => {
       where: { id: decoded.userId },
     });
 
-    const safeUser = excludeFields(user, ['password']);
-
     if (!user) {
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/',
-      });
+      res.clearCookie('refreshToken', clearCookieOptions());
 
       return res.status(401).json({
         success: false,
@@ -502,12 +297,7 @@ exports.refreshToken = async (req, res) => {
 
     // Validate stored refresh token
     if (user.refreshToken !== refreshToken) {
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/',
-      });
+      res.clearCookie('refreshToken', clearCookieOptions());
 
       return res.status(401).json({
         success: false,
@@ -524,20 +314,13 @@ exports.refreshToken = async (req, res) => {
     // Update refresh token in database
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        refreshToken: newRefreshToken,
-        // lastActiveAt: new Date(),
-      },
+      data: { refreshToken: newRefreshToken },
     });
 
-    // Set new refresh token as HTTP-only cookie
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // এখানে change
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
-    });
+    // Set new refresh token with consistent options
+    res.cookie('refreshToken', newRefreshToken, getCookieOptions());
+
+    const safeUser = excludeFields(user, ['password']);
 
     // Send new access token in response body
     res.status(200).json({
@@ -545,8 +328,8 @@ exports.refreshToken = async (req, res) => {
       message: 'Session refreshed successfully',
       data: {
         user: safeUser,
-        accessToken, // Frontend will use this as Bearer token
-        expiresIn: 15 * 60, // 15 minutes in seconds
+        accessToken,
+        expiresIn: 15 * 60,
       },
     });
   } catch (error) {
@@ -560,10 +343,9 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-// Get user profile (protected route)
 exports.getProfile = async (req, res) => {
   try {
-    const { userId } = req.user; // From auth middleware
+    const { userId } = req.user;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -572,10 +354,9 @@ exports.getProfile = async (req, res) => {
         firstName: true,
         lastName: true,
         email: true,
+        username: true,
         createdAt: true,
         updatedAt: true,
-        // lastLoginAt: true,
-        // lastActiveAt: true,
       },
     });
 
