@@ -85,7 +85,11 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
-      const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://bloghub-sooty.vercel.app',
+      ];
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
